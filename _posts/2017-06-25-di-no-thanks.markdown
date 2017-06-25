@@ -5,11 +5,11 @@ date:   2017-06-24 10:18:00
 categories: dependency injection
 ---
 
-Dependency injection is old and popular technique to glue your application components together and keep them decoupled at the same time.
-This is that simple, so why we need sophisticated DI frameworks which sometimes are not trivial to use?
+Dependency injection (DI) is old and popular technique to glue your application components together and keep them decoupled at the same time.
+This is simple, is not it? - so why we need sophisticated DI frameworks which are not trivial to use sometimes?
 Lets review pros and cons of few popular frameworks from java world and decide whether we need them and can we do better without.
 
-First one will be pioneer among DI framework - spring xml. Probably most hated framework because of its verbosity.
+First one will be pioneer among DI framework - spring xml. This is probably most hated framework because of its verbosity inherited from xml.
 
 ### Spring Xml DI
 
@@ -22,15 +22,16 @@ First one will be pioneer among DI framework - spring xml. Probably most hated f
 </xml>
 ```
 -   Pros
-    -   no magic, injection based on instances rather than classes
+    -   no magic, injection based on instances rather than classes which eliminates [robot leg problems](https://github.com/google/guice/wiki/FrequentlyAskedQuestions)
     -   does not pollute classes with annotations like
         @Inject,@Name etc.
 -   Cons
     - verbose, xml is heavy
-    - non homogeneous - injection logic is in XML, application is in java.
-    - you desperately need IDE to refactor and manipulate xml contexts, but it is still too easy to embarrass IDE by quite trivial case.
-    - any non trivial initialization become bulky and cumbersome expressed in XML (a.k.a. XML programming)
+    - non homogeneous , injection logic is in XML, application is in java. Any non trivial configuration become bulky and cumbersome in XML (a.k.a. XML programming)
+    - you need IDE to refactor and manipulate xml contexts, but it is still too easy to embarrass IDE by quite trivial case.
     - xml contexts tend to grow in size as they hard to split and combine.
+
+### Spring Annotation based DI
 
 ```java
 @Component
@@ -43,20 +44,19 @@ class B{
 }
 ```
 
-### Spring Annotation based DI
 -   Pros
-    -   homogeneity , i.e. all DI logic expressed in java
+    -   homogeneity - DI logic expressed in java
 -   Cons
-    -   a lot of magic happens during runtime causing non trivial pazzles for trivial applications. Weak control over application initialization.
-    -   DI based on classes rather than instances. Robot legs problem, you need to use qualifiers to distinct instances.
+    -   a lot of magic happens during runtime which cause non trivial puzzles for trivial applications. Weak control over application initialization.
+    -   DI based on classes rather than instances so [Robot leg problems](https://github.com/google/guice/wiki/FrequentlyAskedQuestions), you need to use qualifiers to distinct instances.
     -   Pollute classes with annotations related to DI
 
 ### Google Guice
 -   Pros
-    -   homogeneity, i.e. DI logic expressed in java.
-    -   keeps DI logic in one place - guice module, does not use classpath resolution.
+    -   homogeneity - DI logic expressed in java.
+    -   keeps DI logic in one place, guice module, does not use classpath resolution. Much better than classpath resolution in case of spring.
 -   Cons
-    -   DI based on classes rather than instances , same robot legs problem as for spring AOP D, need qualifiers to distinct instances.
+    -   DI based on classes rather than instances so [Robot leg problems](https://github.com/google/guice/wiki/FrequentlyAskedQuestions), you need to use qualifiers to distinct instances.
     -   Pollute classes with annotations related to DI
 
 ### Alternative approach
@@ -70,7 +70,7 @@ There are few problems to be addressed to beat above frameworks:
 
 Lets demonstrate that approach on simple example:
 
-we have class Server that process string:
+Imagine that we have class Server that process string:
 
 ```java
 public interface Server{
@@ -78,7 +78,7 @@ public interface Server{
 }
 ```
 
-but it is lazy bastard and prefer to delegate it to function provided in constructor:
+it is lazy bastard and prefer to delegate processing to service provided in constructor:
 
 ```java
 public class ServerImpl implements Server{
@@ -91,7 +91,7 @@ public class ServerImpl implements Server{
 }
 ```
 
-inject !
+lets inject this service!
 
 ```java
 public class DiModule {
@@ -104,7 +104,7 @@ public class DiModule {
     }
 }
 ```
-Run it!
+and run application:
 
 ```java
 class Main{
@@ -115,25 +115,26 @@ class Main{
 }
 ```
 
-mock with overriding and test!
+if we want to mock provided service we just override *getProcessor()* method in module:
 
 ```java
-class TestDi{
-    public void testDi(){
-        DiModule testModule = new DiModule() {
-            @Override
-            public Function<String, String> getProcessor() {
-                return (s)->"processed_by_mock(" + s + ")";
-            }
-        };
-        Assert.assertEquals("processed_by_mock(in_str)", mockedModule.getServer().process("in_str"));
-    }
+public void testDi(){
+    DiModule testModule = new DiModule() {
+        @Override
+        public Function<String, String> getProcessor() {
+            return (s)->"processed_by_mock(" + s + ")";
+        }
+    };
+    Assert.assertEquals("processed_by_mock(in_str)",
+        mockedModule.getServer().process("in_str"));
 }
 ```
-We miss singletons here for dealing with heavy classes and services, it is very easy to fix:
+
+As you may note we are missing singletons here , that could be useful when dealing with heavy classes and services, but this is very easy to fix:
+Introduce SingletonsContainer which will hold all singletons in one place:
 
 ```java
-public class DiModule {
+public class DiModule implements AutoCloseable{
 
     private SingletonsContainer singletons = new SingletonsContainer();
 
@@ -146,10 +147,14 @@ public class DiModule {
             return new ServerImpl(getProcessor());
         });
     }
+
+    public void close(){
+        singletons.close();
+    }
 }
 ```
 
-SingletonsContainer is pretty easy to implement so I will put only interface here:
+SingletonsContainer is pretty easy to implement so I will just put interface here:
 
 ```java
 public interface SingletonsContainer extends AutoCloseable{
@@ -158,4 +163,5 @@ public interface SingletonsContainer extends AutoCloseable{
 }
 ```
 
-I use it at work for more than 2 years and feel relief comparing to times when I had to deal with spring and even with guice.
+I use this approach at work for more than 2 years and feel huge relief comparing to times when I had use spring.
+Hopefully this will be useful for lost souls in spring mess.

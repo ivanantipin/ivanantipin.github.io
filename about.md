@@ -3,4 +3,6 @@ layout: page
 title: About me 
 ---
 
-This is a static page. It could be an 'about page' if you'd like.
+My name is Ivan Antipin, I am software engineer since 2003. 
+I have experience with many languages : java, python, c#, scala, R. 
+

@@ -1,6 +1,6 @@
-name: Your New Jekyll Site
-description: Blogging about stuffs
-meta_description: "Your New Jekyll Site, Blogging about stuffs"
+name: JAB - just another blog
+description: Blogging about everything
+meta_description: "JAB  just another blog"
 
 markdown: kramdown
 highlighter: rouge
@@ -13,4 +13,4 @@ gems: [jekyll-paginate]
 
 # Details for the RSS feed generator
 url:            'blog url'
-author:         'Your Name'
+author:         'Ivan Antipin'
